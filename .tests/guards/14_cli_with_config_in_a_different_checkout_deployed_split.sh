@@ -18,7 +18,7 @@ cp -r workflow config .tests "$WD2/"
 mkdir -p "$WD2/input"
 sed 's|samples: .*|samples: input/samples.csv|' config/test.yaml > "$WD2/input/config.yaml"
 cp .tests/samples.csv "$WD2/input/samples.csv"
-python workflow/scripts/tetranscripts-pipe run \
+python workflow/scripts/tepipe run \
   --config "$WD2/input/config.yaml" --cores 2 --dry-run > "$T/deployed.log" 2>&1
 DEPLOY_RC=$?
 if [ $DEPLOY_RC -ne 0 ]; then

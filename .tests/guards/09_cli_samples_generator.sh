@@ -10,7 +10,7 @@ guard_init
 # --- the samples CLI must reproduce the committed fixture -----------
 # (same rows, order-insensitive; generated paths are absolute while
 # the fixture's are relative, so compare basenames)
-python workflow/scripts/tetranscripts-pipe samples --reads .tests/reads --dry-run > "$T/cli_sheet.csv" 2> "$T/cli_samples.err"
+python workflow/scripts/tepipe samples --reads .tests/reads --dry-run > "$T/cli_sheet.csv" 2> "$T/cli_samples.err"
 if [ $? -ne 0 ]; then
   echo "ERROR: samples generator failed"; cat "$T/cli_samples.err"; FAIL=1
 else

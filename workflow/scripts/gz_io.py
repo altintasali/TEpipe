@@ -1,4 +1,4 @@
-"""Gzip-aware file helpers for TEtranscripts-pipe scripts.
+"""Gzip-aware file helpers for TEpipe scripts.
 
 Pipeline text outputs use .gz extensions to save disk space.  These helpers
 let every script transparently read and write compressed files without

@@ -8,7 +8,7 @@ set -uo pipefail
 guard_init
 
 # --- CLI run must scaffold config + sheet and pass a real dry-run ---
-python workflow/scripts/tetranscripts-pipe run \
+python workflow/scripts/tepipe run \
   --config "$T/cli/config.yaml" --samplesheet "$T/cli/samples.csv" \
   --reads .tests/reads \
   --fasta .tests/resources/genome.fa \

@@ -1,6 +1,6 @@
 # TO-DO List
 
-- `tetranscripts-pipe` script (`init` and `samples`) should be more flexible for creating the samplesheet.csv. It should be written to current directory
+- `tepipe` script (`init` and `samples`) should be more flexible for creating the samplesheet.csv. It should be written to current directory
 - make all "write_igv_to_bed" rules "true"
 - strandedness check MultiQC text is wrong when strandedness is declared in samples.csv
   (`workflow/scripts/strandedness_check_mqc.py:135-143`). For every "undetermined" sample it

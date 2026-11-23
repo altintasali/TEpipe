@@ -42,11 +42,11 @@ def _read_version():
     scriptdir/bench_iteration are), so the previous attempt to read
     `snakemake_obj.snakefile` always raised AttributeError and silently
     returned "unknown" -- verified: the field showed "unknown" in every
-    generated config_used_mqc.json. workflow/scripts/tetranscripts-pipe and
+    generated config_used_mqc.json. workflow/scripts/tepipe and
     .tests/check_version_sync.py already solve this exact problem correctly
     via __file__; this follows the same pattern (and, via __file__, still
     resolves through a `workflow/` symlink to a shared checkout -- see the
-    tetranscripts-pipe CLI's own docstring for that deployment shape).
+    tepipe CLI's own docstring for that deployment shape).
     """
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     try:

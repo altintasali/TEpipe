@@ -31,7 +31,7 @@ DOC_HEADER = (
     "Auto-generated from `snakemake --rulegraph` by `workflow/scripts/"
     "flowchart.py` -- do not hand-edit (regenerate instead, see the script's "
     "docstring). One node per rule; for a simpler, conceptual diagram see the "
-    "main [README](https://github.com/altintasali/TEtranscripts-pipe#readme).\n\n"
+    "main [README](https://github.com/altintasali/TEpipe#readme).\n\n"
 )
 FLOW_START = "<!-- flowchart:start -->"
 FLOW_END = "<!-- flowchart:end -->"

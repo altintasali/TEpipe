@@ -5,7 +5,7 @@
 ![Platform](https://img.shields.io/badge/platform-Python-blue)
 ![Version](https://img.shields.io/badge/version-0.15.1-blue)
 
-*Formerly TEtranscripts-pipe. The conda environment is now `tepipe`; the command-line script keeps the `tetranscripts-pipe` name.*
+*Formerly TEtranscripts-pipe.*
 
 A Snakemake workflow that quantifies genes **and** transposable elements (TEs)
 from RNA-seq data with [TEtranscripts/TEcount](https://github.com/mhammell-laboratory/TEtranscripts),

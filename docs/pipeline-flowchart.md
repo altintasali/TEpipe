@@ -1,6 +1,6 @@
 # Full Pipeline Flowchart
 
-Auto-generated from `snakemake --rulegraph` by `workflow/scripts/flowchart.py` -- do not hand-edit (regenerate instead, see the script's docstring). One node per rule; for a simpler, conceptual diagram see the main [README](https://github.com/altintasali/TEtranscripts-pipe#readme).
+Auto-generated from `snakemake --rulegraph` by `workflow/scripts/flowchart.py` -- do not hand-edit (regenerate instead, see the script's docstring). One node per rule; for a simpler, conceptual diagram see the main [README](https://github.com/altintasali/TEpipe#readme).
 
 <!-- flowchart:start -->
 ```mermaid

@@ -26,7 +26,7 @@ rule software_versions:
         # Every pinned tool, grouped by pipeline stage -- MultiQC renders
         # each top-level YAML key as its own header in the Software
         # Versions section, so splitting into stage groups (instead of one
-        # flat "TEtranscripts-pipe" list) makes the section scannable as
+        # flat "TEpipe" list) makes the section scannable as
         # the tool count grows. Tools whose versions MultiQC auto-detects
         # from logs (STAR, FastQC, samtools...) are listed here too, so the
         # section stays complete even when a log omits them.

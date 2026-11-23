@@ -11,7 +11,7 @@ guard_init
 # The sheet is taken from the config's 'samples:' key
 # (config/test.yaml -> .tests/samples.csv), resolved repo-root
 # relative like snakemake itself does.
-python workflow/scripts/tetranscripts-pipe run \
+python workflow/scripts/tepipe run \
   --config config/test.yaml --cores 2 --dry-run > "$T/cli_config_only.log" 2>&1
 CLI_RC=$?
 if [ $CLI_RC -ne 0 ]; then
