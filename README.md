@@ -1,9 +1,11 @@
-# TEtranscripts-pipe
+# TEpipe
 
-![CI](https://img.shields.io/github/actions/workflow/status/altintasali/TEtranscripts-pipe/ci.yml?label=CI)
-![License](https://img.shields.io/github/license/altintasali/TEtranscripts-pipe?color=blue)
+![CI](https://img.shields.io/github/actions/workflow/status/altintasali/TEpipe/ci.yml?label=CI)
+![License](https://img.shields.io/github/license/altintasali/TEpipe?color=blue)
 ![Platform](https://img.shields.io/badge/platform-Python-blue)
 ![Version](https://img.shields.io/badge/version-0.15.1-blue)
+
+*Formerly TEtranscripts-pipe; the command-line tool and conda environment keep the `tetranscripts-pipe` name.*
 
 A Snakemake workflow that quantifies genes **and** transposable elements (TEs)
 from RNA-seq data with [TEtranscripts/TEcount](https://github.com/mhammell-laboratory/TEtranscripts),
@@ -25,7 +27,7 @@ flowchart LR
 ```
 
 *(Simplified — every rule, dependency, and optional stage is in the
-[full pipeline flowchart](https://github.com/altintasali/TEtranscripts-pipe/wiki/Full-Pipeline-Flowchart)
+[full pipeline flowchart](https://github.com/altintasali/TEpipe/wiki/Full-Pipeline-Flowchart)
 on the wiki.)*
 
 ## Pipeline at a glance
@@ -129,11 +131,11 @@ This README covers getting the pipeline installed and running. Everything
 else — every config key, the CLI, HPC/SLURM setup, and how each stage
 (strandedness, STAR 2-pass, TEcounts/TElocal sample-QC, the chimera
 screens) actually works — lives in the
-**[wiki](https://github.com/altintasali/TEtranscripts-pipe/wiki)**:
+**[wiki](https://github.com/altintasali/TEpipe/wiki)**:
 
-- **Configuration & running**: [Configuration Reference](https://github.com/altintasali/TEtranscripts-pipe/wiki/Configuration-Reference) · [Command-Line Interface](https://github.com/altintasali/TEtranscripts-pipe/wiki/Command-Line-Interface) · [Running the Pipeline](https://github.com/altintasali/TEtranscripts-pipe/wiki/Running-the-Pipeline) · [HPC and SLURM](https://github.com/altintasali/TEtranscripts-pipe/wiki/HPC-and-SLURM) · [Resource Usage and Reports](https://github.com/altintasali/TEtranscripts-pipe/wiki/Resource-Usage-and-Reports) · [Tool Versions](https://github.com/altintasali/TEtranscripts-pipe/wiki/Tool-Versions)
-- **How each stage works**: [Strandedness and STAR 2-pass](https://github.com/altintasali/TEtranscripts-pipe/wiki/Strandedness-and-STAR-2-pass) · [TEcounts Sample-QC](https://github.com/altintasali/TEtranscripts-pipe/wiki/TEcounts-Sample-QC) · [TElocal](https://github.com/altintasali/TEtranscripts-pipe/wiki/TElocal) · [Chimera Detection](https://github.com/altintasali/TEtranscripts-pipe/wiki/Chimera-Detection)
-- **Reference**: [Output Layout](https://github.com/altintasali/TEtranscripts-pipe/wiki/Output-Layout) · [Chimera Evidence Measurements](docs/chimera-evidence.md) — what has actually been measured about each evidence signal, on what cohort, and what hasn't been tested yet
+- **Configuration & running**: [Configuration Reference](https://github.com/altintasali/TEpipe/wiki/Configuration-Reference) · [Command-Line Interface](https://github.com/altintasali/TEpipe/wiki/Command-Line-Interface) · [Running the Pipeline](https://github.com/altintasali/TEpipe/wiki/Running-the-Pipeline) · [HPC and SLURM](https://github.com/altintasali/TEpipe/wiki/HPC-and-SLURM) · [Resource Usage and Reports](https://github.com/altintasali/TEpipe/wiki/Resource-Usage-and-Reports) · [Tool Versions](https://github.com/altintasali/TEpipe/wiki/Tool-Versions)
+- **How each stage works**: [Strandedness and STAR 2-pass](https://github.com/altintasali/TEpipe/wiki/Strandedness-and-STAR-2-pass) · [TEcounts Sample-QC](https://github.com/altintasali/TEpipe/wiki/TEcounts-Sample-QC) · [TElocal](https://github.com/altintasali/TEpipe/wiki/TElocal) · [Chimera Detection](https://github.com/altintasali/TEpipe/wiki/Chimera-Detection)
+- **Reference**: [Output Layout](https://github.com/altintasali/TEpipe/wiki/Output-Layout) · [Chimera Evidence Measurements](docs/chimera-evidence.md) — what has actually been measured about each evidence signal, on what cohort, and what hasn't been tested yet
 
 ## Quick start
 
@@ -152,8 +154,8 @@ so there is nothing to install or solve. Fetch and unpack it with the helper
 script (needs only `bash`/`curl`/`tar`):
 
 ```bash
-git clone https://github.com/altintasali/TEtranscripts-pipe.git
-cd TEtranscripts-pipe
+git clone https://github.com/altintasali/TEpipe.git
+cd TEpipe
 ./workflow/scripts/install-env.sh   # downloads the latest release env into $HOME/software/tetranscripts-pipe-env
 source workflow/scripts/activate-env.sh   # activates it in your current shell
 ```
@@ -175,8 +177,8 @@ Miniconda; conda ≥23.10 already uses the fast libmamba solver, so mamba is
 optional).
 
 ```bash
-git clone https://github.com/altintasali/TEtranscripts-pipe.git
-cd TEtranscripts-pipe
+git clone https://github.com/altintasali/TEpipe.git
+cd TEpipe
 conda env create -f workflow/environment.yaml   # snakemake + every analysis tool, installed once
 conda activate tetranscripts-pipe
 ```
@@ -202,7 +204,7 @@ snakemake --cores 16
 
 (Or let the bundled CLI do these setup steps for you — `init`, `samples`, and
 `run` generate the same files and launch snakemake; see the wiki's
-[Command-Line Interface](https://github.com/altintasali/TEtranscripts-pipe/wiki/Command-Line-Interface) page.)
+[Command-Line Interface](https://github.com/altintasali/TEpipe/wiki/Command-Line-Interface) page.)
 
 All tools (STAR, samtools, RSeQC, MultiQC, TEtranscripts, DESeq2, pheatmap,
 UCSC tools) live directly in this environment, so no `--sdm conda` is needed —
@@ -224,7 +226,7 @@ documented with comments and examples right there); `input/samples.csv` is
 the design file (`sample`, `fastq_1`, `fastq_2`, `strandedness`, `condition`
 columns — an nf-core/rnaseq samplesheet works as-is). For the full key-by-key
 reference for both files, see the wiki's
-[Configuration Reference](https://github.com/altintasali/TEtranscripts-pipe/wiki/Configuration-Reference).
+[Configuration Reference](https://github.com/altintasali/TEpipe/wiki/Configuration-Reference).
 
 ## Notes
 
@@ -242,6 +244,6 @@ reference for both files, see the wiki's
   paths; the first run after upgrading, run once with
   `--rerun-triggers mtime` so they are not rebuilt for that reason alone.
 
-See the [wiki](https://github.com/altintasali/TEtranscripts-pipe/wiki) for
+See the [wiki](https://github.com/altintasali/TEpipe/wiki) for
 everything else, including troubleshooting startup errors and resuming a
 failed run.

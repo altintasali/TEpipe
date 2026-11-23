@@ -23,7 +23,7 @@
 #   export PATH="$PREFIX/bin:$PATH"
 set -euo pipefail
 
-repo="altintasali/TEtranscripts-pipe"
+repo="altintasali/TEpipe"
 stem="tetranscripts-pipe"
 default_prefix="$HOME/software/${stem}-env"
 
