@@ -5,7 +5,7 @@
 ![Platform](https://img.shields.io/badge/platform-Python-blue)
 ![Version](https://img.shields.io/badge/version-0.15.1-blue)
 
-*Formerly TEtranscripts-pipe; the command-line tool and conda environment keep the `tetranscripts-pipe` name.*
+*Formerly TEtranscripts-pipe. The conda environment is now `tepipe`; the command-line script keeps the `tetranscripts-pipe` name.*
 
 A Snakemake workflow that quantifies genes **and** transposable elements (TEs)
 from RNA-seq data with [TEtranscripts/TEcount](https://github.com/mhammell-laboratory/TEtranscripts),
@@ -156,7 +156,7 @@ script (needs only `bash`/`curl`/`tar`):
 ```bash
 git clone https://github.com/altintasali/TEpipe.git
 cd TEpipe
-./workflow/scripts/install-env.sh   # downloads the latest release env into $HOME/software/tetranscripts-pipe-env
+./workflow/scripts/install-env.sh   # downloads the latest release env into $HOME/software/tepipe-env
 source workflow/scripts/activate-env.sh   # activates it in your current shell
 ```
 
@@ -180,7 +180,7 @@ optional).
 git clone https://github.com/altintasali/TEpipe.git
 cd TEpipe
 conda env create -f workflow/environment.yaml   # snakemake + every analysis tool, installed once
-conda activate tetranscripts-pipe
+conda activate tepipe
 ```
 
 ### Either way, then

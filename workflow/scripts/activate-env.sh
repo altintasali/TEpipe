@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# activate-env.sh -- activate the pre-built tetranscripts-pipe conda
+# activate-env.sh -- activate the pre-built TEpipe conda
 # environment. SOURCE this file (it sets environment variables in your current
 # shell and must run in it):
 #
 #   source workflow/scripts/activate-env.sh [PREFIX]
 #
-# PREFIX defaults to $HOME/software/tetranscripts-pipe-env, matching the
+# PREFIX defaults to $HOME/software/tepipe-env, matching the
 # default install location used by install-env.sh. Pass a different PREFIX when
 # you installed elsewhere with `./workflow/scripts/install-env.sh -o PREFIX`.
 #
@@ -24,7 +24,7 @@ if [[ $_is_exec -eq 1 ]]; then
     exit 1
 fi
 
-prefix="${1:-$HOME/software/tetranscripts-pipe-env}"
+prefix="${1:-$HOME/software/tepipe-env}"
 if [[ ! -f "$prefix/bin/activate" ]]; then
     echo "error: no environment found at $prefix" >&2
     echo "       install it first with: ./workflow/scripts/install-env.sh [-o $prefix]" >&2
@@ -38,7 +38,7 @@ fi
 source "$prefix/bin/activate"
 
 if [[ -t 2 ]]; then
-    echo "Activated tetranscripts-pipe environment at $prefix" >&2
+    echo "Activated TEpipe environment at $prefix" >&2
     snakemake_version=$("$prefix/bin/python" -c "import snakemake; print(snakemake.__version__)" 2>/dev/null || true)
     [[ -n "$snakemake_version" ]] && echo "  snakemake $snakemake_version" >&2
 fi

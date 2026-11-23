@@ -1,4 +1,4 @@
-name: tetranscripts-pipe
+name: tepipe
 channels:
   - conda-forge
   - bioconda
