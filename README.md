@@ -3,7 +3,7 @@
 ![CI](https://img.shields.io/github/actions/workflow/status/altintasali/TEpipe/ci.yml?label=CI)
 ![License](https://img.shields.io/github/license/altintasali/TEpipe?color=blue)
 ![Platform](https://img.shields.io/badge/platform-Python-blue)
-![Version](https://img.shields.io/badge/version-0.15.1-blue)
+![Version](https://img.shields.io/badge/version-0.16.0-blue)
 
 *Formerly TEtranscripts-pipe.*
 
