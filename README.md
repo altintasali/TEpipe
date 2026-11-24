@@ -13,6 +13,24 @@ files to gene + transposable element (TE) counts
 TElocal per copy) and to gene-TE chimeric transcripts from three independent
 screens, all summarised in one MultiQC report.
 
+```mermaid
+flowchart LR
+    reads["Raw reads"] --> trim["Trim (optional)"]
+    trim --> align["STAR alignment"]
+    align --> quant["Gene + TE quantification<br/>(TEcount / TElocal)"]
+    align --> rdev["Chimeras: split reads"]
+    align --> asm["Chimeras: assembly<br/>(2nd STAR pass + StringTie)"]
+    align --> sjdev["Chimeras: splice junctions"]
+    rdev --> cand["Gene-TE candidates<br/>(evidence, not a score)"]
+    asm --> cand
+    sjdev --> cand
+    quant --> report["MultiQC report"]
+    cand --> report
+```
+
+*(Simplified: every rule and optional stage is in the
+[full pipeline flowchart](https://github.com/altintasali/TEpipe/wiki/Full-Pipeline-Flowchart).)*
+
 ## Install
 
 Pre-built environment (recommended; Linux x86_64, needs only `bash`/`curl`/`tar`):
@@ -43,24 +61,6 @@ The sample sheet has `sample`, `fastq_1`, `fastq_2`, `strandedness` and
 
 ## What you get
 
-```mermaid
-flowchart LR
-    reads["Raw reads"] --> trim["Trim (optional)"]
-    trim --> align["STAR alignment"]
-    align --> quant["Gene + TE quantification<br/>(TEcount / TElocal)"]
-    align --> rdev["Chimeras: split reads"]
-    align --> asm["Chimeras: assembly<br/>(2nd STAR pass + StringTie)"]
-    align --> sjdev["Chimeras: splice junctions"]
-    rdev --> cand["Gene-TE candidates<br/>(evidence, not a score)"]
-    asm --> cand
-    sjdev --> cand
-    quant --> report["MultiQC report"]
-    cand --> report
-```
-
-*(Simplified: every rule and optional stage is in the
-[full pipeline flowchart](https://github.com/altintasali/TEpipe/wiki/Full-Pipeline-Flowchart).)*
-
 - **Gene + TE counts:** `results/tecount/` (per TE family) and
   `results/telocal/` (per TE copy). Each has a `counts_matrix.tsv.gz` ready for
   DESeq2 or edgeR.
@@ -69,7 +69,7 @@ flowchart LR
   is the same table, searchable and sortable in the browser.
 - **Chimera counts:** `gene_te_chimera_counts_matrix.tsv.gz` in
   `results/chimera/assembly/` and `results/chimera/splice_junctions/`, one
-  column per sample, for differential chimera usage.
+  column per sample, also ready for differential analysis with DESeq2 or edgeR.
 - **QC report:** `results/qc/multiqc_report.html` with alignment,
   strandedness, sample PCA/clustering, chimera summaries and tool versions.
 
