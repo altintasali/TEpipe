@@ -13,49 +13,6 @@ files to gene + transposable element (TE) counts
 TElocal per copy) and to gene-TE chimeric transcripts from three independent
 screens, all summarised in one MultiQC report.
 
-```mermaid
-flowchart LR
-    reads["Raw reads"] --> trim["Trim (optional)"]
-    trim --> align["STAR alignment"]
-    align --> quant["Gene + TE quantification<br/>(TEcount / TElocal)"]
-    align --> rdev["Chimeras: split reads"]
-    align --> asm["Chimeras: assembly<br/>(2nd STAR pass + StringTie)"]
-    align --> sjdev["Chimeras: splice junctions"]
-    rdev --> cand["Gene-TE candidates<br/>(evidence, not a score)"]
-    asm --> cand
-    sjdev --> cand
-    quant --> report["MultiQC report"]
-    cand --> report
-```
-
-*(Simplified: every rule and optional stage is in the
-[full pipeline flowchart](https://github.com/altintasali/TEpipe/wiki/Full-Pipeline-Flowchart).)*
-
-## What you get
-
-| Output | Use it for |
-|---|---|
-| `results/tecount/`, `results/telocal/` (per-sample tables + `counts_matrix.tsv.gz`) | gene + TE counts per family (TEcount) and per copy (TElocal), for your own DESeq2/edgeR |
-| `results/chimera/candidates.tsv.gz` + `candidates_explorer.html` | every gene-TE pair with all evidence from all screens; the HTML is a searchable, sortable table |
-| `results/chimera/{assembly,splice_junctions}/gene_te_chimera_counts_matrix.tsv.gz` | chimera counts per sample, for differential chimera usage |
-| `results/qc/multiqc_report.html` | QC, alignment, strandedness, sample PCA/clustering, chimera summaries, tool versions |
-
-TEpipe does **not** run differential expression and does **not** score or rank
-chimeras: candidates are evidence to sort, filter and check by eye.
-
-### The three chimera screens
-
-| Screen | Tool | Catches | Misses |
-|---|---|---|---|
-| Split reads (`chimera.chimeric_reads`) | STAR chimeric output | a read split between a gene and a TE; needs no annotation | chimeras spliced through a normal intron |
-| Assembly (`chimera.assembly`) | StringTie on its own STAR pass | whole transcripts: where the TE sits | transcripts with too few reads |
-| Splice junctions (`chimera.splice_junctions`) | STAR `SJ.out.tab` | exact TE-exon joins; GT...AG gives the strand | the rest of the transcript |
-
-Each pair is labelled **novel** (`te_initiated`, `te_exonized`, `te_terminated`),
-**annotated** (already in the GTF) or **antisense**. How the screens work and
-how to read their output: [Chimera Detection](https://github.com/altintasali/TEpipe/wiki/Chimera-Detection)
-and [Interpreting Your Results](https://github.com/altintasali/TEpipe/wiki/Interpreting-Your-Results).
-
 ## Install
 
 Pre-built environment (recommended; Linux x86_64, needs only `bash`/`curl`/`tar`):
@@ -83,6 +40,54 @@ snakemake --cores 16
 
 The sample sheet has `sample`, `fastq_1`, `fastq_2`, `strandedness` and
 `condition` columns; an nf-core/rnaseq sample sheet works as-is.
+
+## What you get
+
+```mermaid
+flowchart LR
+    reads["Raw reads"] --> trim["Trim (optional)"]
+    trim --> align["STAR alignment"]
+    align --> quant["Gene + TE quantification<br/>(TEcount / TElocal)"]
+    align --> rdev["Chimeras: split reads"]
+    align --> asm["Chimeras: assembly<br/>(2nd STAR pass + StringTie)"]
+    align --> sjdev["Chimeras: splice junctions"]
+    rdev --> cand["Gene-TE candidates<br/>(evidence, not a score)"]
+    asm --> cand
+    sjdev --> cand
+    quant --> report["MultiQC report"]
+    cand --> report
+```
+
+*(Simplified: every rule and optional stage is in the
+[full pipeline flowchart](https://github.com/altintasali/TEpipe/wiki/Full-Pipeline-Flowchart).)*
+
+- **Gene + TE counts:** `results/tecount/` (per TE family) and
+  `results/telocal/` (per TE copy). Each has a `counts_matrix.tsv.gz` ready for
+  DESeq2 or edgeR.
+- **Chimera candidates:** `results/chimera/candidates.tsv.gz` lists every
+  gene-TE pair with the evidence from all screens. `candidates_explorer.html`
+  is the same table, searchable and sortable in the browser.
+- **Chimera counts:** `gene_te_chimera_counts_matrix.tsv.gz` in
+  `results/chimera/assembly/` and `results/chimera/splice_junctions/`, one
+  column per sample, for differential chimera usage.
+- **QC report:** `results/qc/multiqc_report.html` with alignment,
+  strandedness, sample PCA/clustering, chimera summaries and tool versions.
+
+TEpipe does **not** run differential expression and does **not** score or rank
+chimeras: candidates are evidence to sort, filter and check by eye.
+
+## The three chimera screens
+
+| Screen | Tool | Catches | Misses |
+|---|---|---|---|
+| Split reads (`chimera.chimeric_reads`) | STAR chimeric output | a read split between a gene and a TE; needs no annotation | chimeras spliced through a normal intron |
+| Assembly (`chimera.assembly`) | StringTie on its own STAR pass | whole transcripts: where the TE sits | transcripts with too few reads |
+| Splice junctions (`chimera.splice_junctions`) | STAR `SJ.out.tab` | exact TE-exon joins; GT...AG gives the strand | the rest of the transcript |
+
+Each pair is labelled **novel** (`te_initiated`, `te_exonized`, `te_terminated`),
+**annotated** (already in the GTF) or **antisense**. How the screens work and
+how to read their output: [Chimera Detection](https://github.com/altintasali/TEpipe/wiki/Chimera-Detection)
+and [Interpreting Your Results](https://github.com/altintasali/TEpipe/wiki/Interpreting-Your-Results).
 
 ## Examples
 
