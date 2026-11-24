@@ -183,11 +183,13 @@ tetranscripts:
 # DESeq2/edgeR analysis downstream.
 
 chimera:
-  # Gene-TE chimera detection via two independent, complementary methods.
-  # See the "Chimera detection" section of the README for the pipeline flow
-  # and output layout of both.
+  # Gene-TE chimera detection via three independent screens: chimeric_reads
+  # (split reads), assembly (StringTie) and splice_junctions (SJ.out.tab).
+  # Each is switched on/off on its own; turn all three off for a plain
+  # quantification run. See the wiki's Chimera Detection page:
+  # https://github.com/altintasali/TEpipe/wiki/Chimera-Detection
   #
-  # EXPERIMENTAL: both stages are newer additions to the pipeline -- their
+  # EXPERIMENTAL: the screens are newer additions to the pipeline -- their
   # classification and QC-view behavior may still change between releases.
   # Use for exploration, and validate the output before relying on it for
   # published results.
@@ -196,8 +198,8 @@ chimera:
     # that feeds TEcount (no separate alignment). On by default: the STAR
     # alignment always emits chimeric junctions and the workflow detects
     # and annotates chimeric gene-TE junction reads
-    # (results/chimera/chimeric_reads/...). Set enabled: false to opt out -- the
-    # workflow then behaves like a plain quantification pipeline. Only
+    # (results/chimera/chimeric_reads/...). Set enabled: false to opt out
+    # (the other two screens have their own switches below). Only
     # sees reads STAR can't explain as one linear alignment -- an
     # ordinary, canonical-intron TE-initiated splice will not appear here;
     # see chimera.assembly below for that case.

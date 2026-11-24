@@ -14,7 +14,7 @@
 #
 # Note: Snakemake's --report re-evaluates the whole DAG, so it only has
 # benchmark data to aggregate once the workflow has actually run (see the
-# "Resource usage & reports" README section). It must be run from the repo
+# wiki's "Resource Usage and Reports" page). It must be run from the repo
 # root, like snakemake itself.
 # =============================================================================
 set -euo pipefail

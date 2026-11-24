@@ -16,9 +16,8 @@
 #                 single-end samples can be mixed.
 #   strandedness  per-sample override: auto, forward, reverse, unstranded,
 #                 or TEtranscripts' "no". Blank = auto (RSeQC detection).
-#   condition     biological group label. Include it to run TEtranscripts
-#                 differential analysis (one contrast per pair of distinct
-#                 groups); omit/blank it to only quantify counts.
+#   condition     biological group label, used to colour the sample-QC
+#                 plots. Optional; TEpipe runs no differential analysis.
 #
 # Lane/run merging (nf-core/rnaseq style): a sample sequenced across
 # multiple lanes or runs is written as one row PER fastq file pair, all with

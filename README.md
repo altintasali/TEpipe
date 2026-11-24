@@ -7,18 +7,20 @@
 
 *Formerly TEtranscripts-pipe.*
 
-A Snakemake workflow that quantifies genes **and** transposable elements (TEs)
-from RNA-seq data with [TEtranscripts/TEcount](https://github.com/mhammell-laboratory/TEtranscripts),
-aligning with STAR and auto-detecting library strandedness via RSeQC.
+**TEpipe finds TE-gene chimeras in RNA-seq.** One Snakemake run takes FASTQ
+files to gene + transposable element (TE) counts
+([TEcount](https://github.com/mhammell-laboratory/TEtranscripts) per family,
+TElocal per copy) and to gene-TE chimeric transcripts from three independent
+screens, all summarised in one MultiQC report.
 
 ```mermaid
 flowchart LR
     reads["Raw reads"] --> trim["Trim (optional)"]
     trim --> align["STAR alignment"]
     align --> quant["Gene + TE quantification<br/>(TEcount / TElocal)"]
-    align --> rdev["Chimeras: read evidence"]
-    align --> asm["Chimeras: transcript evidence<br/>(2nd STAR pass)"]
-    align --> sjdev["Chimeras: SJ evidence"]
+    align --> rdev["Chimeras: split reads"]
+    align --> asm["Chimeras: assembly<br/>(2nd STAR pass + StringTie)"]
+    align --> sjdev["Chimeras: splice junctions"]
     rdev --> cand["Gene-TE candidates<br/>(evidence, not a score)"]
     asm --> cand
     sjdev --> cand
@@ -26,224 +28,98 @@ flowchart LR
     cand --> report
 ```
 
-*(Simplified — every rule, dependency, and optional stage is in the
-[full pipeline flowchart](https://github.com/altintasali/TEpipe/wiki/Full-Pipeline-Flowchart)
-on the wiki.)*
+*(Simplified: every rule and optional stage is in the
+[full pipeline flowchart](https://github.com/altintasali/TEpipe/wiki/Full-Pipeline-Flowchart).)*
 
-## Pipeline at a glance
+## What you get
 
-The workflow builds a STAR index and an RSeQC gene model (BED12) **once**, then
-for every sample concatenates split lanes, optionally trims with TrimGalore!,
-aligns with STAR, and auto-detects library strandedness from the sorted BAM.
-TEcount quantifies genes + TEs per sample (subfamily-level); TElocal provides
-locus-level TE quantification from the same alignment. The pipeline does not
-run any differential-expression analysis itself -- take the per-sample TEcount
-tables into your own DESeq2/edgeR analysis downstream.
-The per-sample TEcount tables also drive a sample-QC view (PCA + sample
-clustering, on by default) and per-sample summary barplots (gene-vs-TE
-assignment and TE class composition), rendered inside the MultiQC report;
-the TElocal tables drive the same section set for the locus-level counts.
+| Output | Use it for |
+|---|---|
+| `results/tecount/`, `results/telocal/` (per-sample tables + `counts_matrix.tsv.gz`) | gene + TE counts per family (TEcount) and per copy (TElocal), for your own DESeq2/edgeR |
+| `results/chimera/candidates.tsv.gz` + `candidates_explorer.html` | every gene-TE pair with all evidence from all screens; the HTML is a searchable, sortable table |
+| `results/chimera/{assembly,splice_junctions}/gene_te_chimera_counts_matrix.tsv.gz` | chimera counts per sample, for differential chimera usage |
+| `results/qc/multiqc_report.html` | QC, alignment, strandedness, sample PCA/clustering, chimera summaries, tool versions |
 
-### Gene-TE chimeras
+TEpipe does **not** run differential expression and does **not** score or rank
+chimeras: candidates are evidence to sort, filter and check by eye.
 
-Up to three **independent** screens look for gene-TE chimeric transcripts:
+### The three chimera screens
 
-- **Chimeric-reads evidence** (`chimera.chimeric_reads`) annotates STAR's chimeric junction
-  reads — reads that cannot be explained by one linear alignment. It is
-  annotation-blind, so it catches breakpoints no assembler would predict, and
-  reuses the same alignment as quantification (no extra STAR pass).
-  **On by default.**
-- **Transcript evidence** (`chimera.assembly`) infers chimeras from StringTie
-  assembly structure, catching TE-initiated/exonized/terminated transcripts
-  spliced through an ordinary canonical intron — which the chimeric-reads
-  screen structurally cannot see. **This costs a second, dedicated STAR pass per
-  sample**; set `chimera.assembly.enabled: false` to skip it. It is newer and
-  less validated than the chimeric-reads screen. **On by default.**
-- **SJ evidence** (`chimera.splice_junctions`) catches the same
-  ordinary-canonical-intron blind spot as the assembly screen, but from
-  STAR's own splice junctions (SJ.out.tab, already produced by the main
-  alignment) at the individual read-junction level — no assembly, no extra
-  STAR pass. **On by default**; set `chimera.splice_junctions.enabled: false`
-  to skip it. Its agreement with the other two screens has not been measured
-  against a chance rate (see
-  [`docs/chimera-evidence.md`](docs/chimera-evidence.md)).
+| Screen | Tool | Catches | Misses |
+|---|---|---|---|
+| Split reads (`chimera.chimeric_reads`) | STAR chimeric output | a read split between a gene and a TE; needs no annotation | chimeras spliced through a normal intron |
+| Assembly (`chimera.assembly`) | StringTie on its own STAR pass | whole transcripts: where the TE sits | transcripts with too few reads |
+| Splice junctions (`chimera.splice_junctions`) | STAR `SJ.out.tab` | exact TE-exon joins; GT...AG gives the strand | the rest of the transcript |
 
-**When to use the assembly screen.** It pays off most on genomes with
-well-annotated TEs (human, mouse), where it recovers chimeras spliced through
-an ordinary canonical intron that the chimeric-reads screen cannot see by construction.
-On novel or poorly annotated TEs the chimeric-reads screen is the better bet, since
-assembly can only call a chimera whose TE is already in the annotation, while
-STAR's chimeric junctions need no annotation at all. The cost is dominated by
-the second STAR pass — roughly double the alignment time and peak disk;
-StringTie and the classification that follow are cheap by comparison.
+Each pair is labelled **novel** (`te_initiated`, `te_exonized`, `te_terminated`),
+**annotated** (already in the GTF) or **antisense**. How the screens work and
+how to read their output: [Chimera Detection](https://github.com/altintasali/TEpipe/wiki/Chimera-Detection)
+and [Interpreting Your Results](https://github.com/altintasali/TEpipe/wiki/Interpreting-Your-Results).
 
-All enabled screens are merged into one catalogue at
-`results/chimera/candidates.tsv.gz` — one row per (gene, TE insertion) pair,
-carrying every line of evidence any screen produced. The report's **Chimera**
-section opens with that list
-as a sortable table, followed by a guide to what each signal is worth, then
-each screen's own evidence.
+## Install
 
-Every typed gene-TE chimera makes a screen count toward a pair, and the
-`chimera_status` column (Status) says which kinds support it, "+"-joined:
-**novel** (`te_initiated`, `te_terminated`, `te_exonized`, typed from the
-junction's direction and the gene's own exon structure), **annotated** (a
-TE-driven transcript the annotation already has: `annotated_promoter_embedded_te`,
-`annotated_terminal_exon_embedded_te`, `annotated_splice`) and **antisense**
-(`antisense_to_gene`: the TE joined to the gene's exon on the opposite strand).
-The chimeric-reads screen can only call antisense with a stranded library.
-Chimeric-read events on another
-chromosome or farther than `chimera.chimeric_reads.max_gene_te_distance`
-(default 200 kb) from the gene stay in that screen's own tables but do not
-make candidates. Each pair also carries where the TE sits relative to the
-gene (position, distance, sense/antisense orientation) and mapping-quality
-signals (SJ unique-read fraction and overhang, chimeric-read anchor length).
+Pre-built environment (recommended; Linux x86_64, needs only `bash`/`curl`/`tar`):
 
-**The pipeline does not rank or score chimera candidates.** No experiment here
-has established what each signal is worth, and early project measurements
-have already contradicted an obvious guess or two — see
-[`docs/chimera-evidence.md`](docs/chimera-evidence.md) for what has (and
-hasn't) been measured so far, on what cohort, and under what restrictions.
-The table's default order is the number of independent screens that found a
-pair, most first, ties broken alphabetically by gene then TE; sort it on
-whichever column your question needs, and expect to validate calls manually.
-Set `chimera.chimeric_reads.enabled: false` to skip chimera detection
-entirely.
+```bash
+git clone https://github.com/altintasali/TEpipe.git && cd TEpipe
+./workflow/scripts/install-env.sh          # latest release into ~/software/tepipe-env
+source workflow/scripts/activate-env.sh
+```
 
-**Counting chimeras for differential analysis.** Two matrices share one row
-key, `gene_id:te_id:chimera_type`:
-`results/chimera/assembly/gene_te_chimera_counts_matrix.tsv.gz` (StringTie
-read estimates per assembled chimeric transcript, summed) and
-`results/chimera/splice_junctions/gene_te_chimera_counts_matrix.tsv.gz`
-(STAR's unique reads across the pair's gene-TE junctions, summed; a read
-crossing two such junctions, as in `te_exonized`, counts twice). Test with
-the assembly matrix and confirm hits in the SJ matrix at the same key; do not
-sum the two, since they count overlapping reads. Each has a
-`…_annotation.tsv.gz` with gene symbol, loci and TE class.
-
-A single MultiQC report pulls together FastQC, TrimGalore!, STAR, RSeQC, the
-TEcounts, TElocal and chimera sections, tool versions, and a per-rule
-resource-usage table.
-
-## Documentation
-
-This README covers getting the pipeline installed and running. Everything
-else — every config key, the CLI, HPC/SLURM setup, and how each stage
-(strandedness, STAR 2-pass, TEcounts/TElocal sample-QC, the chimera
-screens) actually works — lives in the
-**[wiki](https://github.com/altintasali/TEpipe/wiki)**:
-
-- **Configuration & running**: [Configuration Reference](https://github.com/altintasali/TEpipe/wiki/Configuration-Reference) · [Command-Line Interface](https://github.com/altintasali/TEpipe/wiki/Command-Line-Interface) · [Running the Pipeline](https://github.com/altintasali/TEpipe/wiki/Running-the-Pipeline) · [HPC and SLURM](https://github.com/altintasali/TEpipe/wiki/HPC-and-SLURM) · [Resource Usage and Reports](https://github.com/altintasali/TEpipe/wiki/Resource-Usage-and-Reports) · [Tool Versions](https://github.com/altintasali/TEpipe/wiki/Tool-Versions)
-- **How each stage works**: [Strandedness and STAR 2-pass](https://github.com/altintasali/TEpipe/wiki/Strandedness-and-STAR-2-pass) · [TEcounts Sample-QC](https://github.com/altintasali/TEpipe/wiki/TEcounts-Sample-QC) · [TElocal](https://github.com/altintasali/TEpipe/wiki/TElocal) · [Chimera Detection](https://github.com/altintasali/TEpipe/wiki/Chimera-Detection)
-- **Reference**: [Output Layout](https://github.com/altintasali/TEpipe/wiki/Output-Layout) · [Chimera Evidence Measurements](docs/chimera-evidence.md) — what has actually been measured about each evidence signal, on what cohort, and what hasn't been tested yet
+Or with conda: `conda env create -f workflow/environment.yaml && conda activate tepipe`.
+Custom install paths, pinned releases and upgrading: [Installation](https://github.com/altintasali/TEpipe/wiki/Installation).
 
 ## Quick start
 
-There are two ways to get the environment the workflow needs. Both give you
-the same `snakemake` plus every analysis tool — pick one:
-
-- **Option A** (recommended): a pre-built environment tarball — no conda, no
-  solver; needs only `bash`/`curl`/`tar`.
-- **Option B**: build it yourself with conda (needs conda ≥23.10).
-
-### Option A — pre-built environment (no conda)
-
-Every GitHub release ships a tarball of the complete environment
-(`...-env.tar.gz`, Linux x86_64), built from `workflow/environment.yaml` in CI —
-so there is nothing to install or solve. Fetch and unpack it with the helper
-script (needs only `bash`/`curl`/`tar`):
-
 ```bash
-git clone https://github.com/altintasali/TEpipe.git
-cd TEpipe
-./workflow/scripts/install-env.sh   # downloads the latest release env into $HOME/software/tepipe-env
-source workflow/scripts/activate-env.sh   # activates it in your current shell
-```
+snakemake --configfile config/test.yaml -n           # dry run: prints the plan
+snakemake --configfile config/test.yaml --cores 4    # tiny bundled test dataset
 
-Pass `-o PREFIX` to install elsewhere (e.g. shared cluster storage) and `-r vX.Y.Z`
-to pin a specific release instead of the latest. If you used a custom `-o`,
-activate it the same way: `source workflow/scripts/activate-env.sh /path/to/env`. Then
-continue with the setup steps below.
-
-Re-running `install-env.sh` replaces an existing install automatically (it
-prints a warning); `-f` is only needed if the target directory holds unrelated
-files. `activate-env.sh` prints a one-line confirmation on activation and
-errors out with a reinstall hint if the environment looks incomplete.
-
-### Option B — build it yourself with conda
-
-Requires conda (e.g. [Miniforge](https://github.com/conda-forge/miniforge) or
-Miniconda; conda ≥23.10 already uses the fast libmamba solver, so mamba is
-optional).
-
-```bash
-git clone https://github.com/altintasali/TEpipe.git
-cd TEpipe
-conda env create -f workflow/environment.yaml   # snakemake + every analysis tool, installed once
-conda activate tepipe
-```
-
-### Either way, then
-
-```bash
-# Verify the install (dry-run: parses the config, prints the plan, runs nothing):
-snakemake --configfile config/test.yaml -n
-
-# Smoke test on the bundled tiny synthetic dataset (no real genome/reads needed):
-snakemake --configfile config/test.yaml --cores 4
-
-# Set up your own analysis. input/config.yaml and input/samples.csv are
-# gitignored on purpose, so every clone starts as a clean project and `git
-# pull` never conflicts with your analysis settings -- create them from the
-# committed .example templates:
-cp config/config.example.yaml input/config.yaml
-cp config/samples.example.csv input/samples.csv
-# ...edit both (reference paths, sample sheet), then:
+cp config/config.example.yaml input/config.yaml      # your analysis
+cp config/samples.example.csv input/samples.csv      # (input/ is gitignored)
+# edit both: reference paths in config.yaml, one row per sample in samples.csv
 snakemake --cores 16
 ```
 
-(Or let the bundled CLI do these setup steps for you — `init`, `samples`, and
-`run` generate the same files and launch snakemake; see the wiki's
-[Command-Line Interface](https://github.com/altintasali/TEpipe/wiki/Command-Line-Interface) page.)
+The sample sheet has `sample`, `fastq_1`, `fastq_2`, `strandedness` and
+`condition` columns; an nf-core/rnaseq sample sheet works as-is.
 
-All tools (STAR, samtools, RSeQC, MultiQC, TEtranscripts, DESeq2, pheatmap,
-UCSC tools) live directly in this environment, so no `--sdm conda` is needed —
-nothing to download or solve per run. The pre-built tarball is exactly this
-environment, pre-assembled from the same `workflow/environment.yaml`.
+## Examples
 
-## Configuration
-
-You only need two files to run an analysis, created from the committed
-`.example` templates (both are gitignored, so each clone is a clean project):
+**From a folder of FASTQs, in one command.** The `tepipe` CLI writes the config
+and sample sheet for you, then runs snakemake:
 
 ```bash
-cp config/config.example.yaml input/config.yaml
-cp config/samples.example.csv input/samples.csv
+workflow/scripts/tepipe run --fasta genome.fa.gz --gtf genes.gtf.gz \
+    --te-gtf te.gtf.gz --reads fastq/ --cores 16
 ```
 
-`input/config.yaml` holds reference paths and tool options (every key is
-documented with comments and examples right there); `input/samples.csv` is
-the design file (`sample`, `fastq_1`, `fastq_2`, `strandedness`, `condition`
-columns — an nf-core/rnaseq samplesheet works as-is). For the full key-by-key
-reference for both files, see the wiki's
-[Configuration Reference](https://github.com/altintasali/TEpipe/wiki/Configuration-Reference).
+**On a SLURM cluster.** Each rule runs as its own job
+([HPC and SLURM](https://github.com/altintasali/TEpipe/wiki/HPC-and-SLURM)):
+
+```bash
+workflow/scripts/tepipe run --config input/config.yaml --profile workflow/profiles/slurm
+```
+
+**TE quantification only.** In `input/config.yaml`, set `enabled: false`
+under all three screens: `chimera.chimeric_reads`, `chimera.assembly` and
+`chimera.splice_junctions`.
+
+**Faster chimera screen.** The assembly screen costs a second STAR pass
+(about twice the alignment time and peak disk). It pays off on well-annotated
+genomes such as human and mouse. On poorly annotated TEs, or to save time, set
+`chimera.assembly.enabled: false` and keep the other two screens.
+
+## Documentation
+
+Everything else is in the **[wiki](https://github.com/altintasali/TEpipe/wiki)**:
+
+- **Running:** [Installation](https://github.com/altintasali/TEpipe/wiki/Installation) · [Configuration Reference](https://github.com/altintasali/TEpipe/wiki/Configuration-Reference) · [Command-Line Interface](https://github.com/altintasali/TEpipe/wiki/Command-Line-Interface) · [Running the Pipeline](https://github.com/altintasali/TEpipe/wiki/Running-the-Pipeline) · [HPC and SLURM](https://github.com/altintasali/TEpipe/wiki/HPC-and-SLURM) · [Resource Usage and Reports](https://github.com/altintasali/TEpipe/wiki/Resource-Usage-and-Reports)
+- **How it works:** [Strandedness and STAR 2-pass](https://github.com/altintasali/TEpipe/wiki/Strandedness-and-STAR-2-pass) · [TEcounts Sample-QC](https://github.com/altintasali/TEpipe/wiki/TEcounts-Sample-QC) · [TElocal](https://github.com/altintasali/TEpipe/wiki/TElocal) · [Chimera Detection](https://github.com/altintasali/TEpipe/wiki/Chimera-Detection)
+- **Results:** [Interpreting Your Results](https://github.com/altintasali/TEpipe/wiki/Interpreting-Your-Results) · [Output Layout](https://github.com/altintasali/TEpipe/wiki/Output-Layout) · [Chimera evidence measurements](docs/chimera-evidence.md) (what has been measured about each signal, and what hasn't)
 
 ## Notes
 
-- Versioning: the current release is recorded in the `VERSION` file at the repo
-  root and tagged `vX.Y.Z` in git (the version badge above shows the current
-  release).
-- Gzipped fastqs are read natively by STAR, so merged/trimmed intermediates stay
-  gzipped; gzipped references (`.fa.gz`/`.gtf.gz`) decompress once automatically.
-  Mix and match freely.
-- STAR indexing and TEtranscripts are memory-hungry (TEtranscripts: ~20-30 GB
-  recommended for human data).
-- A finished run directory can be renamed or moved: rules record their inputs
-  relative to it, so snakemake does not rerun anything afterwards (the report
-  still shows full paths). Results built before this release recorded absolute
-  paths; the first run after upgrading, run once with
-  `--rerun-triggers mtime` so they are not rebuilt for that reason alone.
-
-See the [wiki](https://github.com/altintasali/TEpipe/wiki) for
-everything else, including troubleshooting startup errors and resuming a
-failed run.
+- Memory: STAR indexing and TEtranscripts are memory-hungry (TEtranscripts: about 20-30 GB for human).
+- Gzipped FASTQs and references (`.fa.gz`, `.gtf.gz`) work directly.
+- A finished run directory can be moved or renamed without triggering reruns.
